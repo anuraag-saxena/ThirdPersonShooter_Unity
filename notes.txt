@@ -1,0 +1,14 @@
+Shared folder can be used in different project
+scripts only for this game
+
+
+ framework to create third person shooter
+ give components of local player and events
+
+1. we are not using MonoBehaviour because we will not attach it to a GameObject
+   // make instance of gamemanager
+
+2. allow to use without creating instance
+
+------------------------------------------------------------------------------------
+
