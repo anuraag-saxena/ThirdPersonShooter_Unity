@@ -7,27 +7,46 @@ public class Shooter : MonoBehaviour {
     [SerializeField] float rateOfFire;
     [SerializeField] Projectile projectile;
     [SerializeField] Transform hand;
+    [SerializeField] AudioController audioReload;
+    [SerializeField] AudioController audioFire;
+    
+    public Transform AimTarget;
+    public Vector3 AimTargetOffset;
 
-    private WeaponReloader reloader;
+    public WeaponReloader Reloader;
+
+    private ParticleSystem muzzleFireParticleSystem;
 
     float nextFireAllowed;
     Transform muzzle;
     
     public bool canFire;
-    
-    void Awake() {
-        muzzle = transform.Find("Muzzle");
-        reloader = GetComponent<WeaponReloader>();
 
+    public void Equip() {
         transform.SetParent(hand);
+        transform.localPosition = Vector3.zero;
+        transform.localRotation = Quaternion.identity;
+    }
 
+    void Awake() {
+        muzzle = transform.Find("Model/Muzzle");
+        Reloader = GetComponent<WeaponReloader>();
+        muzzleFireParticleSystem = muzzle.GetComponent<ParticleSystem>();
     }
 
     public void Reload() {
-        if (reloader == null) {
+        if (Reloader == null) {
             return;
         }
-        reloader.Reload();
+        Reloader.Reload();
+        audioReload.Play(); 
+    }
+
+    void FireEffect() {
+        if (muzzleFireParticleSystem == null) {
+            return;
+        }
+        muzzleFireParticleSystem.Play();
     }
 
     public virtual void Fire() {
@@ -37,25 +56,28 @@ public class Shooter : MonoBehaviour {
             return;
         }
 
-        if(reloader != null)
+        if(Reloader != null)
         {
-            if(reloader.IsReloading)
+            if(Reloader.IsReloading)
             {
                 return;
             }
-            if (reloader.RoundsRemainingInClip == 0)
+            if (Reloader.RoundsRemainingInClip == 0)
             {
                 return;
             }
 
-            reloader.TakeFromClip(1);
+            Reloader.TakeFromClip(1);
         }
 
         nextFireAllowed = Time.time + rateOfFire;
 
+        muzzle.LookAt(AimTarget.position + AimTargetOffset);
+        FireEffect();
+
         // instantiate the projectile
         Instantiate(projectile, muzzle.position, muzzle.rotation);
-
+        audioFire.Play();
         canFire = true;
     }
 

@@ -4,12 +4,23 @@ using UnityEngine;
 
 public class ThirdPersonCamera : MonoBehaviour
 {
+    [System.Serializable]
+    public class CameraRig {
+        public Vector3 CameraOffset;
+        public float CrouchedHeight;
+        public float Damping;
+    }
 
-    [SerializeField] Vector3 cameraOffset;
-    [SerializeField] float damping;
+    // 0.7, 0.8, -7 || 5
+
+    [SerializeField] CameraRig defaultCamera;
+    [SerializeField] CameraRig aimCamera;
 
     Transform cameraLookTarget;
     Player localPlayer;
+
+
+
     void Awake()
     {
         GameManager.Instance.OnLocalPlayerJoined += HandleOnLocalPlayerJoined;
@@ -25,15 +36,26 @@ public class ThirdPersonCamera : MonoBehaviour
 
     }
 
-    void Update()
+    void LateUpdate()       // LateUpdate
     {
-        Vector3 targetPosition = cameraLookTarget.position + localPlayer.transform.forward * cameraOffset.z 
-                                                           + localPlayer.transform.up * cameraOffset.y
-                                                           + localPlayer.transform.right * cameraOffset.x;
+        if (localPlayer == null)
+            return;
+
+        CameraRig cameraRig = defaultCamera;
+
+        if (localPlayer.PlayerState.WeaponState == PlayerState.EWeaponState.AIMING || localPlayer.PlayerState.WeaponState == PlayerState.EWeaponState.AIMEDFIRING) {
+            cameraRig = aimCamera;
+        }
+
+        float targetHeight = cameraRig.CameraOffset.y + (localPlayer.PlayerState.MoveState == PlayerState.EMoveState.CROUCHING ? cameraRig.CrouchedHeight : 0);
+
+        Vector3 targetPosition = cameraLookTarget.position + localPlayer.transform.forward * cameraRig.CameraOffset.z 
+                                                           + localPlayer.transform.up * targetHeight
+                                                           + localPlayer.transform.right * cameraRig.CameraOffset.x;
 
         Quaternion targetRotation = Quaternion.LookRotation(cameraLookTarget.position - targetPosition, Vector3.up);
 
-        transform.position = Vector3.Lerp(transform.position, targetPosition, damping * Time.deltaTime);
-        transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, damping * Time.deltaTime);
+        transform.position = Vector3.Lerp(transform.position, targetPosition, cameraRig.Damping * Time.deltaTime);
+        transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, cameraRig.Damping * Time.deltaTime);
     }
 }

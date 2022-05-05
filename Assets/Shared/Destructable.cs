@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Collider))]
 public class Destructable : MonoBehaviour
 {
     [SerializeField] float hitPoints;
@@ -24,8 +25,6 @@ public class Destructable : MonoBehaviour
     }
 
     public virtual void Die() {
-        if (!IsAlive)
-            return;
         if(OnDeath != null)
             OnDeath();
     }

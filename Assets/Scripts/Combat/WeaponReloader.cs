@@ -7,14 +7,26 @@ public class WeaponReloader : MonoBehaviour
     [SerializeField] int maxAmmo;
     [SerializeField] float reloadTime;
     [SerializeField] int clipSize;
+    [SerializeField] Container inventory;
+    [SerializeField] EWeaponType weaponType;
 
-    int ammo;
     public int shotsFiredInClip;
     bool isReloading;
+    System.Guid containerItemId;
+
+    public event System.Action OnAmmoChanged;
 
     public int RoundsRemainingInClip {
         get {
             return clipSize - shotsFiredInClip;
+        }
+    }
+
+    public int RoundsRemainingInInventory
+    {
+        get
+        {
+            return inventory.GetAmountRemaining(containerItemId);
         }
     }
 
@@ -24,30 +36,38 @@ public class WeaponReloader : MonoBehaviour
         }
     }
 
+    void Awake() {
+        inventory.OnContainerReady += () => {
+            containerItemId = inventory.Add(weaponType.ToString(), maxAmmo);
+        };
+    }
+
     public void Reload() {
         if (isReloading) {
             return;
         }
 
         isReloading = true;
-        print("Reload started");
-        GameManager.Instance.Timer.Add(ExecuteReload, reloadTime); 
+        GameManager.Instance.Timer.Add(() => {
+            ExecuteReload(inventory.TakeFromContainer(containerItemId, clipSize - RoundsRemainingInClip));
+        },reloadTime);
     }
 
-    private void ExecuteReload() {
-        print("Reload Executed");
+    private void ExecuteReload(int amount) {
         isReloading = false;
-        ammo -= shotsFiredInClip;
-        shotsFiredInClip = 0;
-        if (ammo < 0) {
-            ammo = 0;
-            shotsFiredInClip += -ammo;
-        }
+        shotsFiredInClip -= amount;
+        HandleOnAmmoChanged();
     }
 
     public void TakeFromClip(int amount)
     {
         shotsFiredInClip += amount;
+        HandleOnAmmoChanged();
+    }
+
+    public void HandleOnAmmoChanged() {
+        if (OnAmmoChanged != null)
+            OnAmmoChanged();
     }
 
 }

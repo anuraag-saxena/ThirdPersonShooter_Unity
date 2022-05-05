@@ -2,7 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(MoveController))]
+[RequireComponent(typeof(CharacterController))]
+[RequireComponent(typeof(PlayerState))]
+[RequireComponent(typeof(PlayerHealth))]
 public class Player : MonoBehaviour
 {
     [System.Serializable]
@@ -13,29 +15,48 @@ public class Player : MonoBehaviour
         public bool LockMouse;
     }
 
-    [SerializeField] float runSpeed;
-    [SerializeField] float walkSpeed;
-    [SerializeField] float crouchSpeed;
-    [SerializeField] float sprintSpeed;
+    [SerializeField] SwatSoldier settings;
     [SerializeField] MouseInput MouseControl;
+    [SerializeField] AudioController footSteps;
+    [SerializeField] float minimumMoveThreshold;
 
-    private MoveController m_MoveController;
-    public MoveController MoveController {
+    public PlayerAim playerAim;
+
+    Vector3 previousPosition;
+
+    private CharacterController m_MoveController;
+    public CharacterController MoveController {
         get {
             if (m_MoveController == null) {
-                m_MoveController = GetComponent<MoveController>();
+                m_MoveController = GetComponent<CharacterController>();
             }
             return m_MoveController;
         }
     }
 
-    private Crosshair m_Crosshair;
-    private Crosshair Crosshair {
-        get {
-            if (m_Crosshair == null) {
-                m_Crosshair = GetComponentInChildren<Crosshair>();
+    private PlayerState m_PlayerState;
+    public PlayerState PlayerState
+    {
+        get
+        {
+            if (m_PlayerState == null)
+            {
+                m_PlayerState = GetComponent<PlayerState>();
             }
-            return m_Crosshair;
+            return m_PlayerState;
+        }
+    }
+
+    private PlayerHealth m_PlayerHealth;
+    public PlayerHealth PlayerHealth
+    {
+        get
+        {
+            if (m_PlayerHealth == null)
+            {
+                m_PlayerHealth = GetComponent<PlayerHealth>();
+            }
+            return m_PlayerHealth;
         }
     }
 
@@ -51,30 +72,42 @@ public class Player : MonoBehaviour
     }
 
     void Update() {
+        if (!PlayerHealth.IsAlive)
+            return;
+
         Move();
         LookAround();
 
     }
 
     void Move() {
-        float moveSpeed = runSpeed;
+        float moveSpeed = settings.RunSpeed;
 
         if (playerInput.IsWalking) {
-            moveSpeed = walkSpeed;
+            moveSpeed = settings.WalkSpeed;
         }
 
         if (playerInput.IsCrouched)
         {
-            moveSpeed = crouchSpeed;
+            moveSpeed = settings.CrouchSpeed;
         }
 
         if (playerInput.IsSprinting)
         {
-            moveSpeed = sprintSpeed;
+            moveSpeed = settings.SprintSpeed;
         }
 
         Vector2 direction = new Vector2(playerInput.Vertical * moveSpeed, playerInput.Horizontal * moveSpeed);
-        MoveController.Move(direction);
+        
+        MoveController.SimpleMove(transform.forward * direction.x + transform.right * direction.y);
+
+        if (Vector3.Distance(transform.position, previousPosition) > minimumMoveThreshold)
+        {
+            footSteps.Play();
+        }
+
+
+        previousPosition = transform.position;
     }
 
     void LookAround() {
@@ -83,7 +116,7 @@ public class Player : MonoBehaviour
 
         transform.Rotate(Vector3.up* mouseInput.x* MouseControl.Sensitivity.x);
 
-        Crosshair.LookHeight(mouseInput.y* MouseControl.Sensitivity.y);
+        playerAim.SetRotation(mouseInput.y * MouseControl.Sensitivity.y);
     }
 
 }

@@ -16,6 +16,6 @@ public class Health : Destructable {
 
     public override void TakeDamage(float amount) {
         base.TakeDamage(amount);
-        print("Remaining: " + HitPointsRemaining);
+        //print("Remaining: " + HitPointsRemaining);
     }
 }

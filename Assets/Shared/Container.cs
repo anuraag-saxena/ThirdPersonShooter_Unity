@@ -4,7 +4,9 @@ using System.Linq;
 using UnityEngine;
 
 public class Container : MonoBehaviour {
-    private class ContainerItem {
+
+    [System.Serializable]
+    public class ContainerItem {
         public System.Guid Id;
         public string Name;
         public int Maximum;
@@ -31,12 +33,23 @@ public class Container : MonoBehaviour {
             amountTaken += value;
             return value;
         }
+
+        public void Set(int amount) {
+            amountTaken -= amount;
+            if(amountTaken < 0) 
+                amountTaken = 0;
+        }
     };
 
-    List<ContainerItem> items;
+    public List<ContainerItem> items;
+    public event System.Action OnContainerReady;
+
 
     void Awake() {
         items = new List<ContainerItem>();
+        if (OnContainerReady != null) { 
+            OnContainerReady();
+        }
     }
 
     public System.Guid Add(string name, int maximum) {
@@ -48,8 +61,16 @@ public class Container : MonoBehaviour {
         return items.Last().Id;
     }
 
+    public void Put(string name, int amount) {
+        var containerItem = items.Where(x => x.Name == name).FirstOrDefault();
+        if (containerItem == null) {
+            return;
+        }
+        containerItem.Set(amount);
+    }
+
     public int TakeFromContainer(System.Guid id, int amount) {
-        var containerItem = items.Where(x => x.Id == id).FirstOrDefault();
+        var containerItem = GetContainerItem(id);
         if (containerItem == null) {
             return -1;
         }
@@ -57,6 +78,20 @@ public class Container : MonoBehaviour {
         return containerItem.Get(amount);
     }
 
+    public int GetAmountRemaining(System.Guid id) {
+        var containerItem = GetContainerItem(id);
+        if (containerItem == null)
+        {
+            return -1;
+        }
 
+        return containerItem.Remaining;
+    }
+
+    private ContainerItem GetContainerItem(System.Guid id)
+    {
+        var containerItem = items.Where(x => x.Id == id).FirstOrDefault();
+        return containerItem;
+    }
 
 }
